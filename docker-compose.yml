@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  news-aggregator:
+    build:
+      context: .
+      dockerfile: Dockerfile  # Optional if named Dockerfile
+    image: news-aggregator:01
+    container_name: news-aggregator
+    restart: always
+    ports:
+      - "8086:80"
+    volumes:
+      - /var/www/html/news-aggregator:/home/sameer/public_html/news-aggregator
+    entrypoint: ["/docker-entrypoint.sh"]
+
