@@ -40,7 +40,6 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $exception)
     {
-        dd('Handler loaded!')
         // Handle API requests with custom error responses
         if ($request->expectsJson() || $request->is('api/*')) {
             return $this->handleApiException($request, $exception);
@@ -52,7 +51,7 @@ class Handler extends ExceptionHandler
     /**
      * Handle API exceptions with custom error responses.
      */
-    protected function handleApiException($request, Throwable $exception): JsonResponse
+    public function handleApiException($request, Throwable $exception): JsonResponse
     {
         $statusCode = 500;
         $message = 'Internal Server Error';

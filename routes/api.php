@@ -144,6 +144,7 @@ Route::group(['middleware' => ['api'],'prefix' => 'v1'], function () {
         Route::post('/', [UserPreferenceController::class, 'store'])->name('preferences.store');
         Route::post('/bulk', [UserPreferenceController::class, 'bulkStore'])->name('preferences.bulkStore');
         Route::get('/articles', [UserPreferenceController::class, 'getPreferredArticles'])->name('preferences.articles');
+        Route::post('/articles/mark-read', [UserPreferenceController::class, 'markAsRead'])->name('preferences.markAsRead');
         Route::delete('/clear', [UserPreferenceController::class, 'clearAll'])->name('preferences.clearAll');
         Route::get('/{userPreference}', [UserPreferenceController::class, 'show'])->name('preferences.show');
         Route::put('/{userPreference}', [UserPreferenceController::class, 'update'])->name('preferences.update');

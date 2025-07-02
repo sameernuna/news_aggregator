@@ -7,6 +7,8 @@ use App\Models\Publisher;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class PublisherController extends Controller
 {
@@ -15,13 +17,24 @@ class PublisherController extends Controller
      */
     public function index(): JsonResponse
     {
-        $publishers = Publisher::withCount('articles')->get();
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Publishers retrieved successfully',
-            'data' => $publishers
-        ]);
+        try {
+            $publishers = Publisher::withCount('articles')->get();
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Publishers retrieved successfully',
+                'data' => $publishers
+            ]);
+        } catch (\Exception $e) {
+            Log::error('PublisherController@index failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve publishers: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -29,18 +42,37 @@ class PublisherController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:100|unique:publishers',
-            'description' => 'nullable|string|max:500',
-        ]);
-
-        $publisher = Publisher::create($request->only(['name', 'description']));
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Publisher created successfully',
-            'data' => $publisher
-        ], 201);
+        try {
+            $request->validate([
+                'name' => 'required|string|max:100|unique:publishers',
+                'description' => 'nullable|string|max:500',
+            ]);
+            $publisher = Publisher::create($request->only(['name', 'description']));
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Publisher created successfully',
+                'data' => $publisher
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('PublisherController@store validation failed', [
+                'errors' => $e->errors()
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('PublisherController@store failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create publisher: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -48,15 +80,26 @@ class PublisherController extends Controller
      */
     public function show(Publisher $publisher): JsonResponse
     {
-        $publisher->load(['articles' => function ($query) {
-            $query->latest()->limit(10);
-        }]);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Publisher retrieved successfully',
-            'data' => $publisher
-        ]);
+        try {
+            $publisher->load(['articles' => function ($query) {
+                $query->latest()->limit(10);
+            }]);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Publisher retrieved successfully',
+                'data' => $publisher
+            ]);
+        } catch (\Exception $e) {
+            Log::error('PublisherController@show failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve publisher: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -64,23 +107,42 @@ class PublisherController extends Controller
      */
     public function update(Request $request, Publisher $publisher): JsonResponse
     {
-        $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:100',
-                Rule::unique('publishers')->ignore($publisher->id)
-            ],
-            'description' => 'nullable|string|max:500',
-        ]);
-
-        $publisher->update($request->only(['name', 'description']));
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Publisher updated successfully',
-            'data' => $publisher
-        ]);
+        try {
+            $request->validate([
+                'name' => [
+                    'required',
+                    'string',
+                    'max:100',
+                    Rule::unique('publishers')->ignore($publisher->id)
+                ],
+                'description' => 'nullable|string|max:500',
+            ]);
+            $publisher->update($request->only(['name', 'description']));
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Publisher updated successfully',
+                'data' => $publisher
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('PublisherController@update validation failed', [
+                'errors' => $e->errors()
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('PublisherController@update failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update publisher: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -88,20 +150,29 @@ class PublisherController extends Controller
      */
     public function destroy(Publisher $publisher): JsonResponse
     {
-        // Check if publisher has articles
-        if ($publisher->articles()->count() > 0) {
+        try {
+            if ($publisher->articles()->count() > 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Cannot delete publisher that has articles. Please remove or reassign articles first.'
+                ], 422);
+            }
+            $publisher->delete();
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Publisher deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('PublisherController@destroy failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'status' => 'error',
-                'message' => 'Cannot delete publisher that has articles. Please remove or reassign articles first.'
-            ], 422);
+                'message' => 'Failed to delete publisher: ' . $e->getMessage()
+            ], 500);
         }
-
-        $publisher->delete();
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Publisher deleted successfully'
-        ]);
     }
 
     /**
@@ -109,18 +180,29 @@ class PublisherController extends Controller
      */
     public function articles(Publisher $publisher): JsonResponse
     {
-        $articles = $publisher->articles()
-            ->with(['author', 'newsCategory'])
-            ->latest()
-            ->paginate(15);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Articles for publisher retrieved successfully',
-            'data' => [
-                'publisher' => $publisher,
-                'articles' => $articles
-            ]
-        ]);
+        try {
+            $articles = $publisher->articles()
+                ->with(['author', 'newsCategory'])
+                ->latest()
+                ->paginate(15);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Articles for publisher retrieved successfully',
+                'data' => [
+                    'publisher' => $publisher,
+                    'articles' => $articles
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('PublisherController@articles failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve articles for publisher: ' . $e->getMessage()
+            ], 500);
+        }
     }
 } 
