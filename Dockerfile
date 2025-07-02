@@ -1,7 +1,7 @@
 FROM ubuntu:24.04
 
 # Set working directory
-WORKDIR /home/sameer/public_html/
+WORKDIR /home/innoscripta/public_html/
 
 # Set non-interactive mode for apt
 ENV DEBIAN_FRONTEND=noninteractive

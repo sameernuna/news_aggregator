@@ -18,6 +18,18 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'phone_no' => '+1234567890',
+        ]);
+
+        // Seed news categories, publishers, authors, and articles
+        $this->call([
+            NewsCategorySeeder::class,
+            PublisherSeeder::class,
+            AuthorSeeder::class,
+            NewsArticleSeeder::class,
+            KeywordSeeder::class,
+            ArticleKeywordSeeder::class,
+            UserPreferenceSeeder::class,
         ]);
     }
 }

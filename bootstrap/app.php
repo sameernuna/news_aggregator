@@ -14,5 +14,13 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->reportable(function (\Throwable $e) {
+            //
+        });
+        
+        $exceptions->renderable(function (\Throwable $e, $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return app(\App\Exceptions\Handler::class)->handleApiException($request, $e);
+            }
+        });
     })->create();
